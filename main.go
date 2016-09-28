@@ -22,7 +22,6 @@ func syncRepos(repos []string) []*git.Repo {
 		go func(wg *sync.WaitGroup, repo string, r []*git.Repo, i int) {
 			defer wg.Done()
 			var err error
-
 			r[i], err = git.Clone(repo, "/tmp/verify/")
 			if err != nil {
 				panic(err)
@@ -35,6 +34,16 @@ func syncRepos(repos []string) []*git.Repo {
 
 	return r
 }
+
+func removeEmpty(repos []string) []string {
+	for i := len(repos)-1; i >= 0; i-- {
+		if strings.TrimSpace(repos[i]) == "" {
+			repos = append(repos[:i], repos[i+1:]...)
+		}
+	}
+	return repos
+}
+
 
 func invalid(err string) {
 	fmt.Println(err)
@@ -51,6 +60,7 @@ func main() {
 	}
 
 	repos := strings.Split(string(data), "\n")
+	repos = removeEmpty(repos)
 
 	for _, repo := range syncRepos(repos) {
 		fmt.Println(repo.Name())
