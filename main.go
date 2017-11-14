@@ -4,12 +4,26 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"reflect"
+
 	"strings"
 	"sync"
 
+	"github.com/fatih/color"
+
 	"github.com/r3labs/verify/git"
 )
+
+var exit int
+
+// HasCommit ...
+func has(commits []string, id string) bool {
+	for _, c := range commits {
+		if c == id {
+			return true
+		}
+	}
+	return false
+}
 
 func syncRepos(repos []string) []*git.Repo {
 	var wg sync.WaitGroup
@@ -36,7 +50,7 @@ func syncRepos(repos []string) []*git.Repo {
 }
 
 func removeEmpty(repos []string) []string {
-	for i := len(repos)-1; i >= 0; i-- {
+	for i := len(repos) - 1; i >= 0; i-- {
 		if strings.TrimSpace(repos[i]) == "" {
 			repos = append(repos[:i], repos[i+1:]...)
 		}
@@ -44,16 +58,17 @@ func removeEmpty(repos []string) []string {
 	return repos
 }
 
-
 func invalid(err string) {
-	fmt.Println(err)
-	os.Exit(1)
+	color.Red("error\n")
+	color.Red(err)
+	exit = 1
 }
 
 func main() {
 	inputFile := os.Args[1]
 
-	fmt.Println("cloning repos")
+	color.Blue("verifying repositories")
+	fmt.Println()
 	data, err := ioutil.ReadFile(inputFile)
 	if err != nil {
 		panic(err)
@@ -63,7 +78,8 @@ func main() {
 	repos = removeEmpty(repos)
 
 	for _, repo := range syncRepos(repos) {
-		fmt.Println(repo.Name())
+		fmt.Print(repo.Name() + "... ")
+
 		// Verify Default Branch
 		defaultBranch, _ := repo.Branch()
 		if defaultBranch != "develop" {
@@ -87,10 +103,42 @@ func main() {
 		// develop commits
 		dc, _ := repo.Commits()
 
+		if len(mc) > len(dc) {
+			invalid("- master branch has more commits than develop")
+			continue
+		}
+
+		// develop commits matched with master
+		dcm := dc[len(dc)-len(mc):]
+
 		// Diff the two commit histories
-		if !reflect.DeepEqual(mc, dc[len(dc)-len(mc):]) {
-			invalid("- branches have diverged")
+		var missingOnMaster []string
+		var missingOnDevelop []string
+
+		for _, c := range dcm {
+			if has(dc, c) {
+				continue
+			}
+			missingOnDevelop = append(missingOnDevelop, c)
+		}
+
+		for _, c := range dcm {
+			if has(mc, c) {
+				continue
+			}
+			missingOnMaster = append(missingOnMaster, c)
+		}
+
+		if len(missingOnDevelop) > 0 {
+			invalid("- missing commits on develop: " + strings.Join(missingOnDevelop, ", "))
+		} else if len(missingOnMaster) > 0 {
+			invalid("- missing commits on master: " + strings.Join(missingOnMaster, ", "))
+		} else {
+			color.Green("ok")
 		}
 	}
 
+	if exit != 0 {
+		os.Exit(1)
+	}
 }
