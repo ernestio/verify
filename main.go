@@ -4,12 +4,23 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"reflect"
+	"github.com/fatih/color"
+//	"reflect"
 	"strings"
 	"sync"
 
 	"github.com/r3labs/verify/git"
 )
+
+// HasCommit ...
+func has(commits[]string, id string) bool {
+	for _, c := range commits {
+		if c == id {
+			return true
+		}
+	}
+	return false
+}
 
 func syncRepos(repos []string) []*git.Repo {
 	var wg sync.WaitGroup
@@ -44,10 +55,9 @@ func removeEmpty(repos []string) []string {
 	return repos
 }
 
-
 func invalid(err string) {
-	fmt.Println(err)
-	os.Exit(1)
+	color.Red(err)
+	//os.Exit(1)
 }
 
 func main() {
@@ -63,7 +73,7 @@ func main() {
 	repos = removeEmpty(repos)
 
 	for _, repo := range syncRepos(repos) {
-		fmt.Println(repo.Name())
+		color.Blue(repo.Name())
 		// Verify Default Branch
 		defaultBranch, _ := repo.Branch()
 		if defaultBranch != "develop" {
@@ -87,10 +97,40 @@ func main() {
 		// develop commits
 		dc, _ := repo.Commits()
 
+		// develop commits matched with master
+		dcm := dc[len(dc)-len(mc):]
+
 		// Diff the two commit histories
-		if !reflect.DeepEqual(mc, dc[len(dc)-len(mc):]) {
-			invalid("- branches have diverged")
+		var missingOnMaster []string
+		var missingOnDevelop []string
+
+		for _, c := range mc {
+			if has(dcm, c) {
+				continue
+			}
+			missingOnDevelop = append(missingOnDevelop, c)
 		}
+
+		for _, c := range dcm {
+			if has(mc, c) {
+				continue
+			}
+			missingOnMaster = append(missingOnMaster, c)
+		}
+		
+		if len(missingOnDevelop) > 0 || len(missingOnMaster) > 0 {
+			invalid("- branches have diverged")
+			color.Cyan("    missing on develop:")
+			for _, c := range missingOnDevelop {
+				color.Magenta("      " + c)			
+			}
+			color.Cyan("    missing on master:")
+			for _, c := range missingOnMaster {
+				color.Magenta("      " + c)				
+			}
+		}
+
+		fmt.Println()
 	}
 
 }
