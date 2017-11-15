@@ -34,6 +34,12 @@ func Clone(repo, destination string) (*Repo, error) {
 	return &r, nil
 }
 
+// Path returns the repo's path
+func (r *Repo) Path() string {
+	path := strings.Split(r.Repo, ":")
+	return strings.Replace(path[len(path)-1], ".git", "", -1)
+}
+
 // Name returns the repo's name
 func (r *Repo) Name() string {
 	path := strings.Split(r.Repo, "/")
@@ -62,7 +68,7 @@ func (r *Repo) Fetch() error {
 
 	_, err := cmd.Output()
 	if err != nil {
-		return errors.New("Could not fetch repo data")
+		return errors.New("could not fetch repo data")
 	}
 
 	return nil
@@ -75,19 +81,20 @@ func (r *Repo) Checkout(branch string) error {
 
 	_, err := cmd.Output()
 	if err != nil {
-		return errors.New("Could not checkout branch")
+		return errors.New("could not checkout branch")
 	}
 
 	return nil
 }
 
+// Branch : ..
 func (r *Repo) Branch() (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 	cmd.Dir = r.deploymentPath
 
 	output, err := cmd.Output()
 	if err != nil {
-		return "", errors.New("Could not get git branch")
+		return "", errors.New("could not get git branch")
 	}
 
 	branch := string(output)
@@ -101,7 +108,7 @@ func (r *Repo) Pull() error {
 
 	_, err := cmd.Output()
 	if err != nil {
-		return errors.New("Could not pull repo changes")
+		return errors.New("could not pull repo changes")
 	}
 
 	return nil
@@ -114,13 +121,31 @@ func (r *Repo) CommitID() (string, error) {
 
 	output, err := cmd.Output()
 	if err != nil {
-		return "", errors.New("Could not get git revision id")
+		return "", errors.New("could not get git revision id")
 	}
 
 	id := string(output)
 	return strings.TrimSpace(id), nil
 }
 
+// Diverged : Check if two branches have diverged
+func (r *Repo) Diverged(from, to string) (bool, error) {
+	cmd := exec.Command("git", "diff", from+"..."+to)
+	cmd.Dir = r.deploymentPath
+
+	output, err := cmd.Output()
+	if err != nil {
+		return true, errors.New("could not get git revision id's")
+	}
+
+	if string(output) == "" {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// Commits : ..
 func (r *Repo) Commits() ([]string, error) {
 	var ids []string
 
@@ -129,7 +154,7 @@ func (r *Repo) Commits() ([]string, error) {
 
 	output, err := cmd.Output()
 	if err != nil {
-		return ids, errors.New("Could not get git revision id's")
+		return ids, errors.New("could not get git revision id's")
 	}
 
 	for _, id := range strings.Split(string(output), "\n") {
@@ -139,6 +164,7 @@ func (r *Repo) Commits() ([]string, error) {
 	return ids, nil
 }
 
+// Sync : ...
 func (r *Repo) Sync(branch string) error {
 	// Fetch correct branch and update
 	err := r.Fetch()
@@ -148,7 +174,7 @@ func (r *Repo) Sync(branch string) error {
 
 	err = r.Checkout(branch)
 	if err != nil {
-		return fmt.Errorf("Could not checkout repo branch " + r.Name() + ":" + branch)
+		return fmt.Errorf("could not checkout repo branch " + r.Name() + ":" + branch)
 	}
 
 	err = r.Pull()
@@ -167,7 +193,7 @@ func (r *Repo) clone() error {
 		_, err := cmd.Output()
 		if err != nil {
 			fmt.Println(err)
-			return fmt.Errorf("Could not clone repo %s", r.Name())
+			return fmt.Errorf("could not clone repo %s", r.Name())
 		}
 	}
 	return nil
