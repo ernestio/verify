@@ -34,6 +34,12 @@ func Clone(repo, destination string) (*Repo, error) {
 	return &r, nil
 }
 
+// Path returns the repo's path
+func (r *Repo) Path() string {
+	path := strings.Split(r.Repo, ":")
+	return strings.Replace(path[len(path)-1], ".git", "", -1)
+}
+
 // Name returns the repo's name
 func (r *Repo) Name() string {
 	path := strings.Split(r.Repo, "/")
@@ -81,6 +87,7 @@ func (r *Repo) Checkout(branch string) error {
 	return nil
 }
 
+// Branch : ..
 func (r *Repo) Branch() (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 	cmd.Dir = r.deploymentPath
@@ -121,6 +128,24 @@ func (r *Repo) CommitID() (string, error) {
 	return strings.TrimSpace(id), nil
 }
 
+// Diverged : Check if two branches have diverged
+func (r *Repo) Diverged(from, to string) (bool, error) {
+	cmd := exec.Command("git", "diff", from+"..."+to)
+	cmd.Dir = r.deploymentPath
+
+	output, err := cmd.Output()
+	if err != nil {
+		return true, errors.New("Could not get git revision id's")
+	}
+
+	if string(output) == "" {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// Commits : ..
 func (r *Repo) Commits() ([]string, error) {
 	var ids []string
 
@@ -139,6 +164,7 @@ func (r *Repo) Commits() ([]string, error) {
 	return ids, nil
 }
 
+// Sync : ...
 func (r *Repo) Sync(branch string) error {
 	// Fetch correct branch and update
 	err := r.Fetch()

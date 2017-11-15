@@ -86,56 +86,17 @@ func main() {
 			invalid("- develop is not default branch!")
 		}
 
-		// Verift commit ID's
-		err := repo.Checkout("master")
+		// Diff the two commit histories
+		diverged, err := repo.Diverged("origin/develop", "origin/master")
 		if err != nil {
-			invalid("- master branch does not exist")
-		}
-
-		// master commits
-		mc, _ := repo.Commits()
-
-		err = repo.Checkout("develop")
-		if err != nil {
-			invalid("- develop branch does not exist")
-		}
-
-		// develop commits
-		dc, _ := repo.Commits()
-
-		if len(mc) > len(dc) {
-			invalid("- master branch has more commits than develop")
+			invalid("- ERROR: " + err.Error())
 			continue
 		}
-
-		// develop commits matched with master
-		dcm := dc[len(dc)-len(mc):]
-
-		// Diff the two commit histories
-		var missingOnMaster []string
-		var missingOnDevelop []string
-
-		for _, c := range dcm {
-			if has(dc, c) {
-				continue
-			}
-			missingOnDevelop = append(missingOnDevelop, c)
+		if diverged {
+			invalid("- Environments have diverged https://github.com/" + repo.Path() + "/compare/develop...master?expand=1")
+			continue
 		}
-
-		for _, c := range dcm {
-			if has(mc, c) {
-				continue
-			}
-			missingOnMaster = append(missingOnMaster, c)
-		}
-
-		if len(missingOnDevelop) > 0 {
-			invalid("- missing commits on develop: " + strings.Join(missingOnDevelop, ", "))
-		} else if len(missingOnMaster) > 0 {
-			invalid("- missing commits on master: " + strings.Join(missingOnMaster, ", "))
-		} else {
-			color.Green("ok")
-		}
+		fmt.Print(" ok\n")
 	}
 
 	if exit != 0 {
