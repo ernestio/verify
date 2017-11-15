@@ -68,7 +68,7 @@ func (r *Repo) Fetch() error {
 
 	_, err := cmd.Output()
 	if err != nil {
-		return errors.New("Could not fetch repo data")
+		return errors.New("could not fetch repo data")
 	}
 
 	return nil
@@ -81,7 +81,7 @@ func (r *Repo) Checkout(branch string) error {
 
 	_, err := cmd.Output()
 	if err != nil {
-		return errors.New("Could not checkout branch")
+		return errors.New("could not checkout branch")
 	}
 
 	return nil
@@ -94,7 +94,7 @@ func (r *Repo) Branch() (string, error) {
 
 	output, err := cmd.Output()
 	if err != nil {
-		return "", errors.New("Could not get git branch")
+		return "", errors.New("could not get git branch")
 	}
 
 	branch := string(output)
@@ -108,7 +108,7 @@ func (r *Repo) Pull() error {
 
 	_, err := cmd.Output()
 	if err != nil {
-		return errors.New("Could not pull repo changes")
+		return errors.New("could not pull repo changes")
 	}
 
 	return nil
@@ -121,7 +121,7 @@ func (r *Repo) CommitID() (string, error) {
 
 	output, err := cmd.Output()
 	if err != nil {
-		return "", errors.New("Could not get git revision id")
+		return "", errors.New("could not get git revision id")
 	}
 
 	id := string(output)
@@ -135,7 +135,7 @@ func (r *Repo) Diverged(from, to string) (bool, error) {
 
 	output, err := cmd.Output()
 	if err != nil {
-		return true, errors.New("Could not get git revision id's")
+		return true, errors.New("could not get git revision id's")
 	}
 
 	if string(output) == "" {
@@ -154,7 +154,7 @@ func (r *Repo) Commits() ([]string, error) {
 
 	output, err := cmd.Output()
 	if err != nil {
-		return ids, errors.New("Could not get git revision id's")
+		return ids, errors.New("could not get git revision id's")
 	}
 
 	for _, id := range strings.Split(string(output), "\n") {
@@ -174,7 +174,7 @@ func (r *Repo) Sync(branch string) error {
 
 	err = r.Checkout(branch)
 	if err != nil {
-		return fmt.Errorf("Could not checkout repo branch " + r.Name() + ":" + branch)
+		return fmt.Errorf("could not checkout repo branch " + r.Name() + ":" + branch)
 	}
 
 	err = r.Pull()
@@ -193,7 +193,7 @@ func (r *Repo) clone() error {
 		_, err := cmd.Output()
 		if err != nil {
 			fmt.Println(err)
-			return fmt.Errorf("Could not clone repo %s", r.Name())
+			return fmt.Errorf("could not clone repo %s", r.Name())
 		}
 	}
 	return nil

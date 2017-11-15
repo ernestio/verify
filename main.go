@@ -84,19 +84,20 @@ func main() {
 		defaultBranch, _ := repo.Branch()
 		if defaultBranch != "develop" {
 			invalid("- develop is not default branch!")
+			continue
 		}
 
 		// Diff the two commit histories
 		diverged, err := repo.Diverged("origin/develop", "origin/master")
 		if err != nil {
-			invalid("- ERROR: " + err.Error())
+			invalid("- " + err.Error())
 			continue
 		}
 		if diverged {
-			invalid("- Environments have diverged https://github.com/" + repo.Path() + "/compare/develop...master?expand=1")
+			invalid("- environments have diverged https://github.com/" + repo.Path() + "/compare/develop...master?expand=1")
 			continue
 		}
-		fmt.Print(" ok\n")
+		color.Green("ok")
 	}
 
 	if exit != 0 {
